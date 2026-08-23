@@ -47,6 +47,134 @@
     margin-bottom:6px;
     text-transform:uppercase;
   }
+
+  .topbar{
+    display:flex;
+    justify-content:flex-end;
+    margin-bottom:10px;
+    min-height:30px;
+  }
+  .auth-signed-out button{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+    font-family: Consolas, monospace;
+    font-size:11px;
+    letter-spacing:.1em;
+    padding:7px 12px;
+    border-radius:3px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:7px;
+  }
+  .auth-signed-out button:hover{
+    border-color:var(--accent);
+    color:var(--ink);
+  }
+  .gdot{
+    width:8px; height:8px; border-radius:50%;
+    background: conic-gradient(#4285F4 0 25%, #EA4335 25% 50%, #FBBC05 50% 75%, #34A853 75% 100%);
+    flex:0 0 auto;
+  }
+  .auth-signed-in{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-family: Consolas, monospace;
+    font-size:11px;
+    color:var(--ink-dim);
+  }
+  .auth-signed-in .who{
+    color:var(--player);
+    letter-spacing:.05em;
+  }
+  .auth-signed-in .avatar{
+    width:20px; height:20px; border-radius:50%;
+    background: linear-gradient(135deg, var(--accent), var(--player));
+    display:flex; align-items:center; justify-content:center;
+    font-size:10px; font-weight:700; color:#05070c;
+  }
+  .auth-signed-in .logout{
+    color:var(--ink-dim);
+    text-decoration:underline;
+    cursor:pointer;
+    background:none; border:none;
+    font-family:inherit; font-size:11px; padding:0;
+  }
+  .auth-signed-in .logout:hover{ color:var(--enemy); }
+
+  .modal-backdrop{
+    position:fixed; inset:0;
+    background:rgba(5,7,12,.75);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:50;
+    padding:20px;
+  }
+  .modal-backdrop.show{ display:flex; }
+  .modal-box{
+    width:100%; max-width:300px;
+    background: var(--bg-panel);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:20px;
+  }
+  .modal-brand{
+    display:flex; align-items:center; gap:8px;
+    font-family: Consolas, monospace;
+    font-size:12px;
+    color:var(--ink-dim);
+    letter-spacing:.05em;
+    margin-bottom:14px;
+  }
+  .modal-box h2{
+    font-size:15px;
+    margin:0 0 4px;
+  }
+  .modal-box .modal-note{
+    font-size:11px;
+    color:var(--ink-dim);
+    margin-bottom:16px;
+    line-height:1.5;
+  }
+  .modal-box input{
+    width:100%;
+    background:#080a10;
+    border:1px solid var(--line);
+    color:var(--ink);
+    padding:10px;
+    border-radius:3px;
+    font-family:inherit;
+    font-size:13px;
+    margin-bottom:14px;
+  }
+  .modal-box input:focus{ outline:none; border-color:var(--accent); }
+  .modal-actions{
+    display:flex;
+    gap:8px;
+  }
+  .modal-actions button{
+    flex:1;
+    padding:9px 10px;
+    border-radius:3px;
+    font-family:inherit;
+    font-size:12px;
+    letter-spacing:.05em;
+    cursor:pointer;
+  }
+  .modal-actions .confirm{
+    background: var(--accent);
+    border:1px solid var(--accent);
+    color:#0b0e14;
+    font-weight:700;
+  }
+  .modal-actions .cancel{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+  }
   h1{
     font-size:22px;
     text-align:center;
@@ -252,6 +380,7 @@
 <body>
 
 <div class="stage">
+  <div class="topbar" id="topbar"></div>
   <div class="eyebrow">Scan Chamber · Turn-Based</div>
   <h1>POWER <span>DUEL</span></h1>
 
@@ -285,6 +414,19 @@
       <div class="verdict" id="verdict">WIN</div>
       <div class="sub" id="verdictSub">Rival power level hit zero</div>
       <button id="restartBtn">Fight Again</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="loginModal">
+  <div class="modal-box">
+    <div class="modal-brand"><span class="gdot"></span> Sign in with Google</div>
+    <h2>Choose a name to play as</h2>
+    <div class="modal-note">Demo sign-in — stands in for real Google OAuth until a backend is wired up. Your name is stored only in this browser.</div>
+    <input type="text" id="loginNameInput" placeholder="Player name" maxlength="24" autocomplete="off">
+    <div class="modal-actions">
+      <button class="cancel" id="loginCancel">Cancel</button>
+      <button class="confirm" id="loginConfirm">Continue</button>
     </div>
   </div>
 </div>
@@ -412,6 +554,90 @@
 
   render();
   logLine('Scan initialized. Both fighters at ' + MAX + '.', 'sys-line');
+
+  // ---- Login (mock Google sign-in, persisted per-browser) ----
+  const topbar = document.getElementById('topbar');
+  const loginModal = document.getElementById('loginModal');
+  const loginNameInput = document.getElementById('loginNameInput');
+  const loginConfirm = document.getElementById('loginConfirm');
+  const loginCancel = document.getElementById('loginCancel');
+
+  function renderAuth(profile){
+    topbar.innerHTML = '';
+    if(profile && profile.name){
+      const wrap = document.createElement('div');
+      wrap.className = 'auth-signed-in';
+      wrap.innerHTML =
+        '<span class="avatar">' + profile.name.charAt(0).toUpperCase() + '</span>' +
+        '<span>Playing as <span class="who">' + escapeHtml(profile.name) + '</span></span>' +
+        '<button class="logout" id="logoutBtn">Log out</button>';
+      topbar.appendChild(wrap);
+      document.getElementById('logoutBtn').addEventListener('click', logout);
+    } else {
+      const wrap = document.createElement('div');
+      wrap.className = 'auth-signed-out';
+      wrap.innerHTML = '<button id="loginBtn"><span class="gdot"></span> Sign in with Google</button>';
+      topbar.appendChild(wrap);
+      document.getElementById('loginBtn').addEventListener('click', openLoginModal);
+    }
+  }
+
+  function escapeHtml(s){
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function openLoginModal(){
+    loginNameInput.value = '';
+    loginModal.classList.add('show');
+    setTimeout(() => loginNameInput.focus(), 0);
+  }
+  function closeLoginModal(){
+    loginModal.classList.remove('show');
+  }
+
+  async function saveProfile(profile){
+    try {
+      await window.storage.set('profile', JSON.stringify(profile), false);
+    } catch(e){ /* storage unavailable — profile still applied for this session */ }
+  }
+  async function clearProfile(){
+    try {
+      await window.storage.delete('profile', false);
+    } catch(e){ /* ignore */ }
+  }
+
+  async function loadProfile(){
+    try {
+      const res = await window.storage.get('profile', false);
+      if(res && res.value){
+        return JSON.parse(res.value);
+      }
+    } catch(e){ /* no saved profile yet */ }
+    return null;
+  }
+
+  async function confirmLogin(){
+    const name = loginNameInput.value.trim();
+    if(!name) { loginNameInput.focus(); return; }
+    const profile = { name: name.slice(0, 24) };
+    await saveProfile(profile);
+    renderAuth(profile);
+    closeLoginModal();
+  }
+
+  async function logout(){
+    await clearProfile();
+    renderAuth(null);
+  }
+
+  loginConfirm.addEventListener('click', confirmLogin);
+  loginCancel.addEventListener('click', closeLoginModal);
+  loginNameInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') confirmLogin(); });
+  loginModal.addEventListener('click', (e) => { if(e.target === loginModal) closeLoginModal(); });
+
+  loadProfile().then(renderAuth);
 })();
 </script>
 
