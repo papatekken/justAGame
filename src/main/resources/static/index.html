@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>POWER DUEL // Scan Chamber</title>
+<style>
+  :root{
+    --bg-void: #05070c;
+    --bg-panel: #0c1018;
+    --line: #1c2433;
+    --player: #3ec6ff;
+    --player-dim: #123244;
+    --enemy: #ff4b3e;
+    --enemy-dim: #3a1512;
+    --warn: #ffb100;
+    --ink: #e8ecf1;
+    --ink-dim: #6b7688;
+    --accent: #7b5cff;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse at 50% -10%, #101828 0%, var(--bg-void) 55%),
+      var(--bg-void);
+    color:var(--ink);
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    overflow-x:hidden;
+  }
+  .stage{
+    width:100%;
+    max-width:560px;
+    position:relative;
+  }
+  .eyebrow{
+    font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+    font-size:11px;
+    letter-spacing:.35em;
+    color:var(--ink-dim);
+    text-align:center;
+    margin-bottom:6px;
+    text-transform:uppercase;
+  }
+
+  .topbar{
+    display:flex;
+    justify-content:flex-end;
+    margin-bottom:10px;
+    min-height:30px;
+  }
+  .auth-signed-out button{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+    font-family: Consolas, monospace;
+    font-size:11px;
+    letter-spacing:.1em;
+    padding:7px 12px;
+    border-radius:3px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:7px;
+  }
+  .auth-signed-out button:hover{
+    border-color:var(--accent);
+    color:var(--ink);
+  }
+  .gdot{
+    width:8px; height:8px; border-radius:50%;
+    background: conic-gradient(#4285F4 0 25%, #EA4335 25% 50%, #FBBC05 50% 75%, #34A853 75% 100%);
+    flex:0 0 auto;
+  }
+  .auth-signed-in{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-family: Consolas, monospace;
+    font-size:11px;
+    color:var(--ink-dim);
+  }
+  .auth-signed-in .who{
+    color:var(--player);
+    letter-spacing:.05em;
+  }
+  .auth-signed-in .avatar{
+    width:20px; height:20px; border-radius:50%;
+    background: linear-gradient(135deg, var(--accent), var(--player));
+    display:flex; align-items:center; justify-content:center;
+    font-size:10px; font-weight:700; color:#05070c;
+  }
+  .auth-signed-in button{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+    font-family: Consolas, monospace;
+    font-size:11px;
+    letter-spacing:.1em;
+    padding:6px 10px;
+    border-radius:3px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .auth-signed-in button:hover{
+    border-color:var(--enemy);
+    color:var(--ink);
+  }
+
+  .modal-backdrop{
+    position:fixed; inset:0;
+    background:rgba(5,7,12,.75);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:50;
+    padding:20px;
+  }
+  .modal-backdrop.show{ display:flex; }
+  .modal-box{
+    width:100%; max-width:300px;
+    background: var(--bg-panel);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:20px;
+  }
+  .modal-brand{
+    display:flex; align-items:center; gap:8px;
+    font-family: Consolas, monospace;
+    font-size:12px;
+    color:var(--ink-dim);
+    letter-spacing:.05em;
+    margin-bottom:14px;
+  }
+  .modal-box h2{
+    font-size:15px;
+    margin:0 0 4px;
+  }
+  .modal-box .modal-note{
+    font-size:11px;
+    color:var(--ink-dim);
+    margin-bottom:16px;
+    line-height:1.5;
+  }
+  .modal-box input{
+    width:100%;
+    background:#080a10;
+    border:1px solid var(--line);
+    color:var(--ink);
+    padding:10px;
+    border-radius:3px;
+    font-family:inherit;
+    font-size:13px;
+    margin-bottom:14px;
+  }
+  .modal-box input:focus{ outline:none; border-color:var(--accent); }
+  .modal-actions{
+    display:flex;
+    gap:8px;
+  }
+  .modal-actions button{
+    flex:1;
+    padding:9px 10px;
+    border-radius:3px;
+    font-family:inherit;
+    font-size:12px;
+    letter-spacing:.05em;
+    cursor:pointer;
+  }
+  .modal-actions .confirm{
+    background: var(--accent);
+    border:1px solid var(--accent);
+    color:#0b0e14;
+    font-weight:700;
+  }
+  .modal-actions .cancel{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+  }
+  h1{
+    font-size:22px;
+    text-align:center;
+    margin:0 0 22px;
+    letter-spacing:.08em;
+    font-weight:700;
+  }
+  h1 span{color:var(--accent);}
+
+  .arena{
+    background: linear-gradient(180deg, var(--bg-panel), #090c13);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:20px 18px 22px;
+    position:relative;
+    box-shadow: 0 0 0 1px rgba(123,92,255,.05), 0 30px 60px -30px rgba(0,0,0,.8);
+  }
+  .arena::before{
+    content:"";
+    position:absolute; inset:0;
+    background: repeating-linear-gradient(0deg, rgba(255,255,255,.015) 0px, rgba(255,255,255,.015) 1px, transparent 1px, transparent 3px);
+    pointer-events:none;
+    border-radius:4px;
+  }
+
+  .fighter{
+    margin-bottom:18px;
+    position:relative;
+  }
+  .fighter-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:6px;
+    font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+  }
+  .fighter-name{
+    font-size:12px;
+    letter-spacing:.2em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+  }
+  .fighter.you .fighter-name{color:var(--player);}
+  .fighter.foe .fighter-name{color:var(--enemy);}
+
+  .pl-readout{
+    font-size:26px;
+    font-weight:700;
+    letter-spacing:.03em;
+    transition: color .15s ease;
+    font-variant-numeric: tabular-nums;
+  }
+  .fighter.you .pl-readout{color:var(--player);}
+  .fighter.foe .pl-readout{color:var(--enemy);}
+  .pl-readout.hit{ animation: flash-hit .4s ease; }
+  @keyframes flash-hit{
+    0%{ color:var(--warn); transform:scale(1.12); }
+    100%{ transform:scale(1); }
+  }
+
+  .bar-track{
+    height:14px;
+    background:#0a0d14;
+    border:1px solid var(--line);
+    border-radius:2px;
+    overflow:hidden;
+    position:relative;
+  }
+  .bar-fill{
+    height:100%;
+    width:100%;
+    transition: width .55s cubic-bezier(.2,.8,.2,1);
+    position:relative;
+  }
+  .fighter.you .bar-fill{ background: linear-gradient(90deg, var(--player-dim), var(--player)); box-shadow: 0 0 12px -2px var(--player); }
+  .fighter.foe .bar-fill{ background: linear-gradient(90deg, var(--enemy-dim), var(--enemy)); box-shadow: 0 0 12px -2px var(--enemy); }
+  .bar-fill.low{ background: linear-gradient(90deg, #3a2a00, var(--warn)) !important; box-shadow:0 0 12px -2px var(--warn) !important; }
+  .bar-fill.low.you, .fighter.you .bar-fill.low{ }
+
+  .vs-row{
+    text-align:center;
+    font-family: Consolas, monospace;
+    font-size:11px;
+    letter-spacing:.3em;
+    color:var(--accent);
+    margin: 4px 0 20px;
+  }
+
+  .log{
+    height:78px;
+    overflow-y:auto;
+    background:#080a10;
+    border:1px solid var(--line);
+    border-radius:3px;
+    padding:8px 10px;
+    font-family: Consolas, monospace;
+    font-size:11.5px;
+    line-height:1.65;
+    color:var(--ink-dim);
+    margin-bottom:16px;
+  }
+  .log div{opacity:0; animation: line-in .25s ease forwards;}
+  @keyframes line-in{ to{opacity:1;} }
+  .log .you-line{color:var(--player);}
+  .log .foe-line{color:var(--enemy);}
+  .log .sys-line{color:var(--warn);}
+
+  .actions{
+    display:flex;
+    gap:10px;
+  }
+  button.attack{
+    flex:1;
+    background: linear-gradient(180deg, #16202f, #0d1420);
+    border:1px solid var(--accent);
+    color:var(--ink);
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:.15em;
+    text-transform:uppercase;
+    padding:14px 10px;
+    border-radius:3px;
+    cursor:pointer;
+    font-family: inherit;
+    transition: transform .08s ease, box-shadow .15s ease, background .15s ease;
+    box-shadow: 0 0 0 0 rgba(123,92,255,0);
+  }
+  button.attack:hover:not(:disabled){
+    background: linear-gradient(180deg, #1c2b40, #101826);
+    box-shadow: 0 0 22px -6px var(--accent);
+  }
+  button.attack:active:not(:disabled){ transform: scale(.97); }
+  button.attack:disabled{
+    opacity:.35;
+    cursor:default;
+  }
+
+  .turn-tag{
+    text-align:center;
+    font-family: Consolas, monospace;
+    font-size:11px;
+    letter-spacing:.25em;
+    color:var(--ink-dim);
+    margin-top:12px;
+    text-transform:uppercase;
+    min-height:14px;
+  }
+  .turn-tag.active-you{color:var(--player);}
+  .turn-tag.active-foe{color:var(--enemy);}
+
+  .shake{ animation: arena-shake .35s ease; }
+  @keyframes arena-shake{
+    0%,100%{ transform: translate(0,0); }
+    20%{ transform: translate(-3px,2px); }
+    40%{ transform: translate(3px,-2px); }
+    60%{ transform: translate(-2px,-1px); }
+    80%{ transform: translate(2px,1px); }
+  }
+
+  .overlay{
+    position:absolute; inset:0;
+    background: rgba(5,7,12,.92);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    border-radius:4px;
+    text-align:center;
+    padding:20px;
+  }
+  .overlay.show{ display:flex; }
+  .overlay .verdict{
+    font-size:30px;
+    font-weight:800;
+    letter-spacing:.05em;
+    margin-bottom:6px;
+  }
+  .overlay .verdict.win{ color:var(--player); text-shadow:0 0 24px rgba(62,198,255,.5); }
+  .overlay .verdict.lose{ color:var(--enemy); text-shadow:0 0 24px rgba(255,75,62,.5); }
+  .overlay .sub{
+    font-family: Consolas, monospace;
+    font-size:11px;
+    letter-spacing:.2em;
+    color:var(--ink-dim);
+    text-transform:uppercase;
+    margin-bottom:20px;
+  }
+  .overlay button{
+    background: transparent;
+    border:1px solid var(--accent);
+    color:var(--ink);
+    padding:10px 22px;
+    border-radius:3px;
+    font-family: Consolas, monospace;
+    letter-spacing:.2em;
+    text-transform:uppercase;
+    font-size:11px;
+    cursor:pointer;
+  }
+  .overlay button:hover{ background: rgba(123,92,255,.12); }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="topbar" id="topbar"></div>
+  <div class="eyebrow">Scan Chamber · Turn-Based</div>
+  <h1>POWER <span>DUEL</span></h1>
+
+  <div class="arena" id="arena">
+    <div class="fighter you">
+      <div class="fighter-head">
+        <span class="fighter-name" id="youName">You</span>
+        <span class="pl-readout" id="youNum">100</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="youBar"></div></div>
+    </div>
+
+    <div class="vs-row">— VS —</div>
+
+    <div class="fighter foe">
+      <div class="fighter-head">
+        <span class="fighter-name">Rival Scan</span>
+        <span class="pl-readout" id="foeNum">100</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="foeBar"></div></div>
+    </div>
+
+    <div class="log" id="log"></div>
+
+    <div class="actions">
+      <button class="attack" id="attackBtn">Attack</button>
+    </div>
+    <div class="turn-tag active-you" id="turnTag">Your move</div>
+
+    <div class="overlay" id="overlay">
+      <div class="verdict" id="verdict">WIN</div>
+      <div class="sub" id="verdictSub">Rival power level hit zero</div>
+      <button id="restartBtn">Fight Again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const MAX = 100;
+  let you = MAX, foe = MAX;
+  let busy = false;
+
+  const youNum = document.getElementById('youNum');
+  const foeNum = document.getElementById('foeNum');
+  const youBar = document.getElementById('youBar');
+  const foeBar = document.getElementById('foeBar');
+  const logEl = document.getElementById('log');
+  const attackBtn = document.getElementById('attackBtn');
+  const turnTag = document.getElementById('turnTag');
+  const arena = document.getElementById('arena');
+  const overlay = document.getElementById('overlay');
+  const verdict = document.getElementById('verdict');
+  const verdictSub = document.getElementById('verdictSub');
+  const restartBtn = document.getElementById('restartBtn');
+
+  function render(){
+    youNum.textContent = Math.max(0, you);
+    foeNum.textContent = Math.max(0, foe);
+    youBar.style.width = Math.max(0, you) + '%';
+    foeBar.style.width = Math.max(0, foe) + '%';
+    youBar.classList.toggle('low', you <= 25);
+    foeBar.classList.toggle('low', foe <= 25);
+  }
+
+  function logLine(text, cls){
+    const d = document.createElement('div');
+    d.className = cls;
+    d.textContent = text;
+    logEl.appendChild(d);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function flashNum(el){
+    el.classList.remove('hit');
+    void el.offsetWidth;
+    el.classList.add('hit');
+  }
+
+  function shakeArena(){
+    arena.classList.remove('shake');
+    void arena.offsetWidth;
+    arena.classList.add('shake');
+  }
+
+  function rollDamage(){
+    return 9 + Math.floor(Math.random() * 13); // 9-21
+  }
+
+  function endGame(playerWon){
+    busy = true;
+    attackBtn.disabled = true;
+    turnTag.textContent = '';
+    verdict.textContent = playerWon ? 'WIN' : 'DEFEATED';
+    verdict.className = 'verdict ' + (playerWon ? 'win' : 'lose');
+    verdictSub.textContent = playerWon
+      ? 'Rival power level hit zero'
+      : 'Your power level hit zero';
+    overlay.classList.add('show');
+  }
+
+  function foeTurn(){
+    turnTag.textContent = 'Rival scanning...';
+    turnTag.className = 'turn-tag active-foe';
+    setTimeout(() => {
+      const dmg = rollDamage();
+      you = Math.max(0, you - dmg);
+      flashNum(youNum);
+      shakeArena();
+      render();
+      logLine('Rival strikes — you take ' + dmg, 'foe-line');
+
+      if(you <= 0){
+        logLine('Your power level hit zero.', 'sys-line');
+        endGame(false);
+        return;
+      }
+      busy = false;
+      attackBtn.disabled = false;
+      turnTag.textContent = 'Your move';
+      turnTag.className = 'turn-tag active-you';
+    }, 750);
+  }
+
+  function playerAttack(){
+    if(busy) return;
+    busy = true;
+    attackBtn.disabled = true;
+
+    const dmg = rollDamage();
+    foe = Math.max(0, foe - dmg);
+    flashNum(foeNum);
+    shakeArena();
+    render();
+    logLine('You strike — rival takes ' + dmg, 'you-line');
+
+    if(foe <= 0){
+      logLine('Rival power level hit zero.', 'sys-line');
+      endGame(true);
+      return;
+    }
+    foeTurn();
+  }
+
+  function restart(){
+    you = MAX; foe = MAX; busy = false;
+    logEl.innerHTML = '';
+    overlay.classList.remove('show');
+    attackBtn.disabled = false;
+    turnTag.textContent = 'Your move';
+    turnTag.className = 'turn-tag active-you';
+    render();
+    logLine('Scan initialized. Both fighters at ' + MAX + '.', 'sys-line');
+  }
+
+  attackBtn.addEventListener('click', playerAttack);
+  restartBtn.addEventListener('click', restart);
+
+  render();
+  logLine('Scan initialized. Both fighters at ' + MAX + '.', 'sys-line');
+
+  // ---- Login (real Google OAuth2, via the Spring Boot backend) ----
+  const topbar = document.getElementById('topbar');
+
+  const youNameEl = document.getElementById('youName');
+
+  function renderAuth(profile){
+    topbar.innerHTML = '';
+    if(profile && profile.authenticated){
+      // Fighter panel shows the signed-in player's name instead of "You".
+      youNameEl.textContent = profile.name;
+
+      const wrap = document.createElement('div');
+      wrap.className = 'auth-signed-in';
+      wrap.innerHTML =
+        '<span class="avatar">' + profile.name.charAt(0).toUpperCase() + '</span>' +
+        '<span>Playing as <span class="who">' + escapeHtml(profile.name) + '</span></span>' +
+        '<button id="logoutBtn"><span class="gdot"></span> Sign out</button>';
+      topbar.appendChild(wrap);
+      document.getElementById('logoutBtn').addEventListener('click', async () => {
+        // /logout needs a POST (Spring Security's default logout endpoint only
+        // accepts GET when CSRF protection is fully disabled app-wide, which it isn't here).
+        try {
+          await fetch('/logout', { method: 'POST', credentials: 'same-origin' });
+        } catch(e) { /* fall through to reload regardless */ }
+        window.location.href = '/';
+      });
+
+      // Sync the duel screen's starting power level with the player's real record.
+      if(typeof profile.powerLevel === 'number'){
+        you = profile.powerLevel;
+        render();
+      }
+    } else {
+      youNameEl.textContent = 'You';
+
+      const wrap = document.createElement('div');
+      wrap.className = 'auth-signed-out';
+      wrap.innerHTML = '<button id="loginBtn"><span class="gdot"></span> Sign in with Google</button>';
+      topbar.appendChild(wrap);
+      document.getElementById('loginBtn').addEventListener('click', () => {
+        window.location.href = '/oauth2/authorization/google';
+      });
+    }
+  }
+
+  function escapeHtml(s){
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  async function loadProfile(){
+    try {
+      const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
+      return await res.json();
+    } catch(e){
+      return { authenticated: false };
+    }
+  }
+
+  loadProfile().then(renderAuth);
+})();
+</script>
+
+</body>
+</html>
