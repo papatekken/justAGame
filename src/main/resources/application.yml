@@ -31,8 +31,11 @@ spring:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
             scope: openid, profile, email
-            redirect-uri: https://{your-site}/login/oauth2/code/googlec
+            redirect-uri: ${app.base-url}/login/oauth2/code/google
 
-# Where to send the browser after a successful Google login.
+# The public URL this app is reachable at - defined once here, and reused
+# below (and in the Google redirect-uri above) so it only needs updating
+# in one place if the domain or port ever changes.
 app:
-  frontend-success-redirect: (your-redirect-link)
+  base-url: *** put in your site ***
+  frontend-success-redirect: ${app.base-url}/
