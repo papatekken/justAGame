@@ -89,6 +89,19 @@
     color:var(--player);
     letter-spacing:.05em;
   }
+  .auth-signed-in .admin-link{
+    color:var(--accent);
+    text-decoration:none;
+    border:1px solid var(--accent);
+    border-radius:3px;
+    padding:4px 8px;
+    font-size:10.5px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+  }
+  .auth-signed-in .admin-link:hover{
+    background: rgba(123,92,255,.12);
+  }
   .auth-signed-in .avatar{
     width:20px; height:20px; border-radius:50%;
     background: linear-gradient(135deg, var(--accent), var(--player));
@@ -273,6 +286,58 @@
     margin: 4px 0 20px;
   }
 
+  /* Portrait row: a silhouette standing on each side, swappable for a real
+     character image later without touching layout or game logic. */
+  .portrait-row{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:10px;
+    margin: 2px 0 18px;
+  }
+  .portrait-frame{
+    width:88px;
+    height:110px;
+    flex:0 0 auto;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    background:
+      radial-gradient(ellipse at 50% 85%, rgba(123,92,255,.10), transparent 70%);
+    border-radius:4px;
+    overflow:hidden;
+    position:relative;
+  }
+  .portrait-frame img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  .portrait-frame svg{
+    width:70%;
+    height:92%;
+  }
+  .portrait-you .silhouette{ fill: var(--player); opacity:.55; filter: drop-shadow(0 0 10px rgba(62,198,255,.35)); }
+  .portrait-foe .silhouette{ fill: var(--enemy); opacity:.55; filter: drop-shadow(0 0 10px rgba(255,75,62,.35)); }
+  .portrait-frame::after{
+    content:"";
+    position:absolute;
+    left:8%; right:8%; bottom:6px;
+    height:6px;
+    background: radial-gradient(ellipse, rgba(0,0,0,.55), transparent 75%);
+    border-radius:50%;
+  }
+  .portrait-vs{
+    flex:0 0 auto;
+    align-self:center;
+    font-family: Consolas, monospace;
+    font-size:11px;
+    letter-spacing:.3em;
+    color:var(--accent);
+    padding-bottom:2px;
+  }
+
   .log{
     height:78px;
     overflow-y:auto;
@@ -395,6 +460,22 @@
   <h1>POWER <span>DUEL</span></h1>
 
   <div class="arena" id="arena">
+    <div class="portrait-row">
+      <div class="portrait-frame portrait-you" id="youPortrait">
+        <svg viewBox="0 0 60 90" xmlns="http://www.w3.org/2000/svg">
+          <circle class="silhouette" cx="30" cy="16" r="13"/>
+          <path class="silhouette" d="M30 30 C12 30 6 44 5 88 L55 88 C54 44 48 30 30 30 Z"/>
+        </svg>
+      </div>
+      <div class="portrait-vs">VS</div>
+      <div class="portrait-frame portrait-foe" id="foePortrait">
+        <svg viewBox="0 0 60 90" xmlns="http://www.w3.org/2000/svg">
+          <circle class="silhouette" cx="30" cy="16" r="13"/>
+          <path class="silhouette" d="M30 30 C12 30 6 44 5 88 L55 88 C54 44 48 30 30 30 Z"/>
+        </svg>
+      </div>
+    </div>
+
     <div class="fighter you">
       <div class="fighter-head">
         <span class="fighter-name" id="youName">You</span>
@@ -446,6 +527,16 @@
   const verdict = document.getElementById('verdict');
   const verdictSub = document.getElementById('verdictSub');
   const restartBtn = document.getElementById('restartBtn');
+  const youPortrait = document.getElementById('youPortrait');
+  const foePortrait = document.getElementById('foePortrait');
+
+  // Swaps a fighter's silhouette for a real character image later, e.g.
+  // setFighterPortrait('you', '/characters/player.png') once character art
+  // exists - no other markup or game logic needs to change.
+  function setFighterPortrait(who, imageUrl){
+    const frame = who === 'you' ? youPortrait : foePortrait;
+    frame.innerHTML = '<img src="' + imageUrl + '" alt="">';
+  }
 
   function render(){
     youNum.textContent = Math.max(0, you);
@@ -568,6 +659,7 @@
       wrap.innerHTML =
         '<span class="avatar">' + profile.name.charAt(0).toUpperCase() + '</span>' +
         '<span>Playing as <span class="who">' + escapeHtml(profile.name) + '</span></span>' +
+        (profile.admin ? '<a class="admin-link" href="/admin.html">Admin</a>' : '') +
         '<button id="logoutBtn"><span class="gdot"></span> Sign out</button>';
       topbar.appendChild(wrap);
       document.getElementById('logoutBtn').addEventListener('click', async () => {

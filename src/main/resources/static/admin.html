@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>POWER DUEL // Admin</title>
+<style>
+  :root{
+    --bg-void: #05070c;
+    --bg-panel: #0c1018;
+    --line: #1c2433;
+    --player: #3ec6ff;
+    --enemy: #ff4b3e;
+    --warn: #ffb100;
+    --ink: #e8ecf1;
+    --ink-dim: #6b7688;
+    --accent: #7b5cff;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background: radial-gradient(ellipse at 50% -10%, #101828 0%, var(--bg-void) 55%), var(--bg-void);
+    color:var(--ink);
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    min-height:100vh;
+    padding:28px 20px 60px;
+  }
+  .wrap{ max-width: 920px; margin: 0 auto; }
+  .eyebrow{
+    font-family: Consolas, monospace;
+    font-size:11px;
+    letter-spacing:.35em;
+    color:var(--ink-dim);
+    text-transform:uppercase;
+    margin-bottom:6px;
+  }
+  h1{
+    font-size:22px;
+    margin:0 0 4px;
+    letter-spacing:.08em;
+  }
+  h1 span{ color:var(--accent); }
+  .back-link{
+    display:inline-block;
+    margin-bottom:20px;
+    font-family: Consolas, monospace;
+    font-size:11px;
+    letter-spacing:.1em;
+    color:var(--ink-dim);
+    text-decoration:none;
+    border-bottom:1px dotted var(--line);
+  }
+  .back-link:hover{ color:var(--player); border-color:var(--player); }
+
+  .state-msg{
+    font-family: Consolas, monospace;
+    font-size:13px;
+    color:var(--ink-dim);
+    padding: 40px 0;
+    text-align:center;
+  }
+  .state-msg.error{ color:var(--enemy); }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    background: linear-gradient(180deg, var(--bg-panel), #090c13);
+    border:1px solid var(--line);
+    border-radius:4px;
+    overflow:hidden;
+    font-size:13px;
+  }
+  th, td{
+    padding:10px 12px;
+    text-align:left;
+    border-bottom:1px solid var(--line);
+    vertical-align:middle;
+  }
+  th{
+    font-family: Consolas, monospace;
+    font-size:10.5px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    background:#0a0d14;
+  }
+  tr:last-child td{ border-bottom:none; }
+  tr:hover td{ background: rgba(123,92,255,.04); }
+
+  input[type="text"], input[type="number"]{
+    width:100%;
+    background:#080a10;
+    border:1px solid var(--line);
+    color:var(--ink);
+    padding:6px 8px;
+    border-radius:3px;
+    font-family:inherit;
+    font-size:13px;
+  }
+  input[type="number"]{ width:80px; }
+  input:focus{ outline:none; border-color:var(--accent); }
+
+  .email-cell{ color:var(--ink-dim); font-size:12px; }
+  .meta-cell{ color:var(--ink-dim); font-size:11px; font-family: Consolas, monospace; white-space:nowrap; }
+
+  .row-actions{ display:flex; gap:6px; white-space:nowrap; }
+  button{
+    font-family: Consolas, monospace;
+    font-size:11px;
+    letter-spacing:.08em;
+    padding:6px 10px;
+    border-radius:3px;
+    cursor:pointer;
+    border:1px solid var(--line);
+    background:transparent;
+    color:var(--ink-dim);
+  }
+  button.save{ border-color:var(--player); color:var(--player); }
+  button.save:hover{ background: rgba(62,198,255,.1); }
+  button.delete{ border-color:var(--enemy); color:var(--enemy); }
+  button.delete:hover{ background: rgba(255,75,62,.1); }
+  button:disabled{ opacity:.4; cursor:default; }
+
+  .row-status{
+    font-family: Consolas, monospace;
+    font-size:10.5px;
+    margin-top:4px;
+    min-height:12px;
+  }
+  .row-status.ok{ color:var(--player); }
+  .row-status.err{ color:var(--enemy); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="eyebrow">Scan Chamber · Admin</div>
+  <h1>PLAYER <span>DATA</span></h1>
+  <a class="back-link" href="/">&larr; back to game</a>
+
+  <div id="content">
+    <div class="state-msg" id="stateMsg">Loading player records&hellip;</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const content = document.getElementById('content');
+
+  function escapeHtml(s){
+    const d = document.createElement('div');
+    d.textContent = s == null ? '' : String(s);
+    return d.innerHTML;
+  }
+
+  function fmtDate(iso){
+    if(!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleString();
+  }
+
+  function showState(msg, isError){
+    content.innerHTML = '<div class="state-msg' + (isError ? ' error' : '') + '">' + escapeHtml(msg) + '</div>';
+  }
+
+  function renderTable(players){
+    if(players.length === 0){
+      showState('No players found yet.');
+      return;
+    }
+
+    let rows = players.map(p => `
+      <tr data-id="${p.id}">
+        <td>${p.id}</td>
+        <td><input type="text" class="f-name" value="${escapeHtml(p.displayName)}"></td>
+        <td class="email-cell">${escapeHtml(p.email)}</td>
+        <td><input type="number" class="f-power" value="${p.powerLevel}"></td>
+        <td><input type="number" class="f-training" value="${p.trainingLevel}"></td>
+        <td class="meta-cell">${fmtDate(p.lastLoginAt)}</td>
+        <td>
+          <div class="row-actions">
+            <button class="save">Save</button>
+            <button class="delete">Delete</button>
+          </div>
+          <div class="row-status"></div>
+        </td>
+      </tr>
+    `).join('');
+
+    content.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Power</th>
+            <th>Training</th>
+            <th>Last login</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+
+    content.querySelectorAll('tr[data-id]').forEach(row => {
+      const id = row.getAttribute('data-id');
+      const statusEl = row.querySelector('.row-status');
+      const saveBtn = row.querySelector('.save');
+      const deleteBtn = row.querySelector('.delete');
+
+      saveBtn.addEventListener('click', async () => {
+        saveBtn.disabled = true;
+        statusEl.textContent = '';
+        statusEl.className = 'row-status';
+        try {
+          const body = {
+            displayName: row.querySelector('.f-name').value,
+            powerLevel: parseInt(row.querySelector('.f-power').value, 10),
+            trainingLevel: parseInt(row.querySelector('.f-training').value, 10)
+          };
+          const res = await fetch('/api/admin/players/' + id, {
+            method: 'PUT',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          if(!res.ok){ throw new Error('Save failed (' + res.status + ')'); }
+          statusEl.textContent = 'Saved';
+          statusEl.className = 'row-status ok';
+        } catch(e){
+          statusEl.textContent = e.message;
+          statusEl.className = 'row-status err';
+        } finally {
+          saveBtn.disabled = false;
+        }
+      });
+
+      deleteBtn.addEventListener('click', async () => {
+        if(!confirm('Delete this player permanently?')) return;
+        deleteBtn.disabled = true;
+        try {
+          const res = await fetch('/api/admin/players/' + id, {
+            method: 'DELETE',
+            credentials: 'same-origin'
+          });
+          if(!res.ok){ throw new Error('Delete failed (' + res.status + ')'); }
+          row.remove();
+        } catch(e){
+          statusEl.textContent = e.message;
+          statusEl.className = 'row-status err';
+          deleteBtn.disabled = false;
+        }
+      });
+    });
+  }
+
+  async function init(){
+    try {
+      const meRes = await fetch('/api/auth/me', { credentials: 'same-origin' });
+      const me = await meRes.json();
+
+      if(!me.authenticated){
+        window.location.href = '/oauth2/authorization/google';
+        return;
+      }
+      if(!me.admin){
+        showState('You are signed in, but this account is not authorized for admin access.', true);
+        return;
+      }
+
+      const listRes = await fetch('/api/admin/players', { credentials: 'same-origin' });
+      if(listRes.status === 403){
+        showState('Not authorized.', true);
+        return;
+      }
+      if(!listRes.ok){
+        showState('Failed to load player data (' + listRes.status + ').', true);
+        return;
+      }
+      const players = await listRes.json();
+      renderTable(players);
+    } catch(e){
+      showState('Something went wrong loading this page.', true);
+    }
+  }
+
+  init();
+})();
+</script>
+
+</body>
+</html>

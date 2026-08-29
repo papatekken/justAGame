@@ -1,7 +1,7 @@
 # justAGame
 a simple game
 
-pring Boot backend for the Power Duel game: real Google login, a persisted
+Spring Boot backend for the Power Duel game: real Google login, a persisted
 `Player` record (power level, training level), and the game screen served
 straight from the app so login works with zero CORS setup.
 
@@ -29,7 +29,9 @@ Following the pattern from your other projects (env vars / `.env`, not committed
 ```bash
 export GOOGLE_CLIENT_ID=your-client-id
 export GOOGLE_CLIENT_SECRET=your-client-secret
+export ADMIN_EMAILS=your-email@gmail.com
 ```
+(comma-separate multiple admin emails, e.g. `export ADMIN_EMAILS=you@gmail.com,teammate@gmail.com`)
 
 (or use `spring-dotenv` / a Spring Profile / Vault, same as your usual setup — `application.yml` just reads `${GOOGLE_CLIENT_ID}` / `${GOOGLE_CLIENT_SECRET}`, nothing is hardcoded)
 
@@ -43,6 +45,25 @@ Then open **http://localhost:8080** — that's the game screen itself, served
 by Spring Boot. "Sign in with Google" now does a real OAuth2 login; after
 consenting, you're redirected back signed in, with your name and stored
 power level shown top-right.
+
+## Admin screen
+
+`/admin.html` lists every player and lets you edit `displayName`,
+`powerLevel`, and `trainingLevel`, or delete a player entirely.
+
+Access is controlled by the `ADMIN_EMAILS` environment variable (see setup
+above) - only signed-in accounts whose Google email is in that list can see
+the page or call the `/api/admin/players` endpoints. Everyone else gets a
+"not authorized" message (frontend) and a 403 (backend), even if logged in.
+
+**On the Droplet**, add the same variable to `/opt/justagame/.env`:
+```
+ADMIN_EMAILS=your-email@gmail.com
+```
+then `systemctl restart justagame`. No code changes needed to add or remove
+admins later - just edit that file and restart.
+
+The Admin link only appears in the game's topbar for accounts in that list.
 
 ## Extending toward training / adventure
 

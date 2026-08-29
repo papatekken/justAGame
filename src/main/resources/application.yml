@@ -37,5 +37,9 @@ spring:
 # below (and in the Google redirect-uri above) so it only needs updating
 # in one place if the domain or port ever changes.
 app:
-  base-url: *** put in your site ***
+  base-url: XXX Your web link XXX
   frontend-success-redirect: ${app.base-url}/
+  # Comma-separated emails allowed to access /admin.html and /api/admin/**.
+  # Set via the ADMIN_EMAILS env var (same pattern as the .env file already
+  # holding GOOGLE_CLIENT_ID/SECRET) - never hardcoded here.
+  admin-emails: ${ADMIN_EMAILS:}

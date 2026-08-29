@@ -1,8 +1,8 @@
 package com.allan.powerduel.controller;
 
 import com.allan.powerduel.dto.PlayerResponse;
-import com.allan.powerduel.model.Player;
 import com.allan.powerduel.repository.PlayerRepository;
+import com.allan.powerduel.service.AdminAccessService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,9 +12,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final PlayerRepository playerRepository;
+    private final AdminAccessService adminAccessService;
 
-    public AuthController(PlayerRepository playerRepository) {
+    public AuthController(PlayerRepository playerRepository, AdminAccessService adminAccessService) {
         this.playerRepository = playerRepository;
+        this.adminAccessService = adminAccessService;
     }
 
     /**
@@ -29,8 +31,11 @@ public class AuthController {
         }
 
         String googleSub = principal.getAttribute("sub");
+        String email = principal.getAttribute("email");
+        boolean admin = adminAccessService.isAdmin(email);
+
         return playerRepository.findByGoogleSub(googleSub)
-                .map(p -> PlayerResponse.of(p.getDisplayName(), p.getPowerLevel(), p.getTrainingLevel()))
+                .map(p -> PlayerResponse.of(p.getDisplayName(), p.getPowerLevel(), p.getTrainingLevel(), admin))
                 .orElse(PlayerResponse.signedOut());
     }
 }
